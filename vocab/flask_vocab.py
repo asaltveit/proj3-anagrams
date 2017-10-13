@@ -52,29 +52,16 @@ def index():
     return flask.render_template('vocab.html')
 
 
-@app.route("/keep_going")
-def keep_going():
-    """
-    After initial use of index, we keep the same scrambled
-    word and try to get more matches
-    """
-    flask.g.vocab = WORDS.as_list()
-    return flask.render_template('vocab.html')
-
-
 @app.route("/success")
 def success():
     return flask.render_template('success.html')
 
-#######################
-# Form handler.
-# CIS 322 note:
-#   You'll need to change this to a
-#   a JSON request handler
-#######################
+###############
+# AJAX request handlers
+#   These return JSON, rather than rendering pages.
+###############
 
-
-@app.route("/_check", methods=["POST"])
+@app.route("/_check")
 def check():
     """
     User has submitted the form with a word ('attempt')
@@ -85,9 +72,13 @@ def check():
     already found.
     """
     app.logger.debug("Entering check")
-
+    success = False
+    finished = False
+    message = ""
+    
     # The data we need, from form and from cookie
-    text = flask.request.form["attempt"]
+    # flask.request.form["attempt"]
+    text = flask.request.args.get("text", type=str)
     jumble = flask.session["jumble"]
     matches = flask.session.get("matches", [])  # Default to empty list
 
@@ -100,50 +91,25 @@ def check():
         # Cool, they found a new word
         matches.append(text)
         flask.session["matches"] = matches
+        success = True
     elif text in matches:
-        flask.flash("You already found {}".format(text))
-    elif not matched:
-        flask.flash("{} isn't in the list of words".format(text))
+        message = "You already found {}".format(text)
     elif not in_jumble:
-        flask.flash(
-            '"{}" can\'t be made from the letters {}'.format(text, jumble))
-    else:
-        app.logger.debug("This case shouldn't happen!")
-        assert False  # Raises AssertionError
+        message = '"{}" can\'t be made from the letters {}'.format(text, jumble)
 
     # Choose page:  Solved enough, or keep going?
     if len(matches) >= flask.session["target_count"]:
-       return flask.redirect(flask.url_for("success"))
-    else:
-       return flask.redirect(flask.url_for("keep_going"))
+       finished = True
 
-###############
-# AJAX request handlers
-#   These return JSON, rather than rendering pages.
-###############
+    
+    rslt = {
+    "success": success,
+    "finished": finished,
+    "message": message
+    }
 
-
-@app.route("/_example")
-def example():
-    """
-    Example ajax request handler
-    """
-    app.logger.debug("Got a JSON request")
-    rslt = {"key": "value"}
     return flask.jsonify(result=rslt)
-
-
-#################
-# Functions used within the templates
-#################
-
-@app.template_filter('filt')
-def format_filt(something):
-    """
-    Example of a filter that can be used within
-    the Jinja2 code
-    """
-    return "Not what you asked for"
+       
 
 ###################
 #   Error handlers

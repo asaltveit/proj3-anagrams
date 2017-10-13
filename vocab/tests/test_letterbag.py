@@ -39,9 +39,19 @@ def test_contains_basic_examples():
     assert LetterBag("abbc").contains("abbc")
     assert not LetterBag("abc").contains("abbc")
 
-
 def test_simple_merge():
     bag_abbc = LetterBag("abbc")
     bag_abccd = LetterBag("abccd")
     bag_abbc.merge(bag_abccd)
     assert bag_abbc.as_string() == "abbccd"
+
+def test_advanced_merge():
+    """
+    Examples using more advanced cases from class.
+    """
+    capital_bag = LetterBag("A")
+    lc_bag = LetterBag("a")
+    empty_bag1 = LetterBag("")
+    empty_bag2 = LetterBag("")
+    assert capital_bag.merge(lc_bag).as_string() == "Aa"
+    assert empty_bag1.merge(empty_bag2).as_string() == ""
